@@ -1,0 +1,9 @@
+numpy>=1.26,<2
+matplotlib>=3.8
+scipy>=1.10
+meshio>=5.3
+vtk>=9.2
+VTUinterface
+gmsh
+ipykernel
+jupyterlab
