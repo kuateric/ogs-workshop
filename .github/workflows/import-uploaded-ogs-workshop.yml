@@ -1,0 +1,73 @@
+name: Import uploaded OGS workshop ZIP
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'OGS_Excavation_HandsOn_Clean_VSCode_And_Jupyter.zip'
+      - '.github/workflows/import-uploaded-ogs-workshop.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout workshop repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Extract exact archive and replace previous training subtree
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import shutil, zipfile
+
+          archive = Path('OGS_Excavation_HandsOn_Clean_VSCode_And_Jupyter.zip')
+          if not archive.is_file():
+              print('Uploaded archive already imported; nothing to do.')
+              raise SystemExit(0)
+
+          destination = Path('training/ogs-excavation-60min')
+          expected_root = 'OGS_Excavation_HandsOn_Clean/'
+          with zipfile.ZipFile(archive) as z:
+              records = [i for i in z.infolist() if not i.is_dir()]
+              assert len(records) == 54, f'Expected 54 files, got {len(records)}'
+              targets = []
+              for info in records:
+                  name = info.filename
+                  assert name.startswith(expected_root), f'Unexpected archive path: {name}'
+                  rel = Path(name[len(expected_root):])
+                  assert str(rel) not in ('', '.') and '..' not in rel.parts and not rel.is_absolute(), f'Unsafe path {name}'
+                  targets.append((info, rel))
+              assert len({str(rel) for _, rel in targets}) == len(targets), 'Duplicate file path'
+              assert '04_vscode_workflow/models/excavation.prj' in {str(p) for _, p in targets}
+              project = z.read(expected_root + '04_vscode_workflow/models/excavation.prj').decode('iso-8859-1')
+              for path in ('../mesh/excavation.vtu', '../mesh/excavation_101.vtu', '../mesh/excavation_102.vtu'):
+                  assert path in project, f'Incorrect OGS mesh path: {path}'
+              if destination.exists():
+                  shutil.rmtree(destination)
+              destination.mkdir(parents=True)
+              for info, rel in targets:
+                  target = destination / rel
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  with z.open(info) as source, target.open('wb') as sink:
+                      shutil.copyfileobj(source, sink)
+              assert len([p for p in destination.rglob('*') if p.is_file()]) == 54
+          archive.unlink()
+          print(f'Imported exactly 54 files into {destination} and removed ZIP')
+          PY
+      - name: Commit imported workshop and delete ZIP
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A -- training/ogs-excavation-60min OGS_Excavation_HandsOn_Clean_VSCode_And_Jupyter.zip
+          if ! git diff --cached --quiet; then
+            git commit -m 'Replace workshop with exact 54-file uploaded ZIP contents'
+            git push origin HEAD:main
+          else
+            echo 'No changes to commit'
+          fi
