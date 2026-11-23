@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export OGS_WORKSHOP_JOBS="${OGS_WORKSHOP_JOBS:-7}"
+export OGS_WORKSHOP_HOME="${OGS_WORKSHOP_HOME:-$HOME/ogs-workshop-test/environment}"
+printf 'OGS workshop: %s parallel builds, environment=%s\n' "$OGS_WORKSHOP_JOBS" "$OGS_WORKSHOP_HOME"
+exec bash "$HERE/install.sh" --all
