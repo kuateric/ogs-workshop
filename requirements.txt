@@ -1,0 +1,34 @@
+# Python 3.12 / Ubuntu 24.04; install into a dedicated venv, never --user / system pip.
+# "ogstools" can pull an OGS wheel; the workshop uses the compiled executable
+# explicitly through OGS_BIN_PATH and an absolute path in the verification suite.
+ogstools>=0.8.2,<0.10
+ogs6py>=0.3,<1
+VTUinterface>=0.7,<1
+numpy>=1.26,<3
+scipy>=1.13,<2
+pandas>=2.2,<4
+matplotlib>=3.8,<4
+pyvista>=0.44,<0.51
+vtk>=9.3,<9.8
+meshio>=5.3,<6
+gmsh>=4.13,<5
+h5py>=3.10,<4
+lxml>=5,<7
+PyYAML>=6,<7
+xarray>=2024.1
+netCDF4>=1.6,<2
+sympy>=1.12,<2
+pint>=0.23,<1
+shapely>=2,<3
+scikit-learn>=1.4,<2
+plotly>=5,<7
+seaborn>=0.13,<1
+Pillow>=10,<13
+imageio>=2.34,<3
+jupyterlab>=4.2,<5
+notebook>=7.2,<8
+ipykernel>=6.29,<8
+ipywidgets>=8,<9
+pytest>=8,<10
+rich>=13,<16
+tqdm>=4.66,<5
