@@ -4,18 +4,70 @@ A reproducible, self-contained training environment for **OpenGeoSys (OGS)**, **
 
 **Platform:** Ubuntu 24.04 or 26.04 LTS, x86-64. Recommended: at least **16 GB RAM**, **60 GB of free disk space**, reliable internet access, and **sudo** privileges. Building OGS and VTK from source is CPU- and disk-intensive. The OGS source revision is pinned for reproducibility.
 
-## 1. Quick installation
+## 1. Installation instructions
 
-No GitHub account or authentication is required:
+Open a terminal on an **Ubuntu 24.04 or 26.04 (x86-64)** computer. You need an internet connection, `git`, and `sudo` access for system package installation. No GitHub account or authentication is required.
+
+**Step 1 — Download the workshop files:**
 
 ```bash
 git clone https://github.com/kuateric/ogs-workshop.git
-cd ogs-workshop
-bash install.sh --dry-run
-bash install
 ```
 
-The `bash install` launcher defaults to **7 parallel compilation jobs** and uses the isolated directory `~/ogs-workshop-test/environment`. To adjust parallelism, run `OGS_WORKSHOP_JOBS=2 bash install` on low-memory machines.
+If Git is not installed, install it first using `sudo apt-get update && sudo apt-get install -y git`.
+
+**Step 2 — Enter the downloaded folder:**
+
+```bash
+cd ogs-workshop
+```
+
+**Step 3 — Preview the installation (recommended):**
+
+```bash
+bash install.sh --dry-run
+```
+
+This prints the installation plan and paths without installing the software.
+
+**Step 4 — Install all workshop software.** Choose the number of parallel compilation jobs according to your computer's available CPU cores and RAM.
+
+For a workstation with sufficient memory, **7 parallel compilation jobs**:
+
+```bash
+OGS_WORKSHOP_JOBS=7 bash install
+```
+
+For a lower-performance machine, **2 parallel compilation jobs**:
+
+```bash
+OGS_WORKSHOP_JOBS=2 bash install
+```
+
+For a machine with very limited CPU or memory, **1 compilation job**:
+
+```bash
+OGS_WORKSHOP_JOBS=1 bash install
+```
+
+**Run only one** of these three installation commands. The `OGS_WORKSHOP_JOBS` setting controls the maximum number of parallel build jobs for OGS and TFEL/MFront; it does not set the CPU count used by every installed application. Larger values can shorten compilation time but require more RAM. If you are unsure about available memory, start with 1 or 2 jobs. On a capable workstation with sufficient memory, 7 jobs is a reasonable choice.
+
+The `bash install` launcher uses an isolated installation directory at `~/ogs-workshop-test/environment`. It automatically runs the full installation (`--all`) and then the verification and numerical smoke tests. The installer may request your `sudo` password for system packages. **Do not run the installer itself with `sudo`.** Existing OGS source/build directories are not intentionally removed, although APT packages and package sources can be changed system-wide.
+
+**Step 5 — Activate the installation after completion:**
+
+```bash
+source ~/ogs-workshop-test/environment/activate.sh
+```
+
+**Step 6 — Verify important commands:**
+
+```bash
+ogs --help
+mfront --version
+gmsh --version
+python -c "import ogstools, ogs6py, pyvista, vtuIO, gmsh; print('Python packages OK')"
+```
 
 The full installation includes:
 
