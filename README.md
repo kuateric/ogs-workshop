@@ -1,166 +1,128 @@
-# OGS-Schulung: vollständige Linux-Umgebung (Ubuntu 24.04 / 26.04)
+# OpenGeoSys Workshop — Ubuntu 24.04 / 26.04
 
-**Ziel:** Alle Teilnehmenden erhalten eine vergleichbare Umgebung für OpenGeoSys,
-Intel oneMKL/PARDISO, TFEL/MFront sowie Python-Vor- und Nachverarbeitung.
+A reproducible, self-contained training environment for **OpenGeoSys (OGS)**, **Intel oneMKL/PARDISO**, **TFEL/MFront**, **Gmsh**, and scientific Python post-processing.
 
-**Plattform:** Ubuntu **24.04 / 26.04 LTS, x86-64**, GNU C++ 13 oder neuer. Empfohlen:
-**16+ GB RAM, 60+ GB freier Speicher**, stabiler Internetzugang und **sudo**
-für Systempakete. OGS/VTK aus Quellcode benötigt viel Rechenzeit. Für ein
-vollständig gleiches Trainingsmodell bitte dieselbe Version dieses Ordners
-verwenden; die OGS-Version ist per Commit festgelegt.
+**Platform:** Ubuntu 24.04 or 26.04 LTS, x86-64. Recommended: at least **16 GB RAM**, **60 GB of free disk space**, reliable internet access, and **sudo** privileges. Building OGS and VTK from source is CPU- and disk-intensive. The OGS source revision is pinned for reproducibility.
 
-## 1. Installation für Kollegen
+## 1. Quick installation
 
-Das Repository öffentlich ohne Anmeldung klonen und in den Ordner wechseln:\n\n```bash\ngit clone https://github.com/kuateric/ogs-workshop.git\ncd ogs-workshop\n```\n\nDann ausführen:
+No GitHub account or authentication is required:
 
 ```bash
+git clone https://github.com/kuateric/ogs-workshop.git
+cd ogs-workshop
 bash install.sh --dry-run
 bash install
 ```
 
-Das Skript installiert nacheinander:
+The `bash install` launcher defaults to **7 parallel compilation jobs** and uses the isolated directory `~/ogs-workshop-test/environment`. To adjust parallelism, run `OGS_WORKSHOP_JOBS=2 bash install` on low-memory machines.
 
-1. **Ubuntu-Build-Voraussetzungen:** Compiler/GFortran, CMake 3.31.10,
-   Ninja, Git, Python 3.12, HDF5, Boost, Eigen und Grafikbibliotheken.
-2. **Gmsh:** Systemprogramm `gmsh` (CLI und GUI) sowie `libgmsh-dev` aus Ubuntu-APT. Zusätzlich steht die Gmsh-Python-API im Workshop-Venv bereit. Ein 2D-Rechteck wird automatisch vernetzt und als `.msh` über `meshio` wieder eingelesen.
-3. **Intel oneAPI Toolkit (2026):** oneMKL-Entwicklungspaket inklusive
-   PARDISO und Intel OpenMP. Die Intel-Pakete stammen aus dem signierten
-   offiziellen Intel-APT-Repository. Der PARDISO-Test löst ein
-   kleines lineares System mit erwarteter Lösung `(2,2)`.
-4. **TFEL/MFront:** frische Quellcode-Kompilierung aus dem stabilen
-   `rliv-5.1`-Zweig der TFEL-5.1-Familie mit Generic Interface für OGS.
-5. **OpenGeoSys:** Commit
-   `8ffec079b9ce8764ab565c6470839b34033bc718` von
-   `gitlab.opengeosys.org/ogs/ogs`, Release-Build aller Prozesse
-   (`OGS_BUILD_PROCESSES=ON`), `OGS_USE_MFRONT=ON`,
-   `OGS_USE_MKL=ON`, MKL-Eigen-Backend, XDMF und CLI-Tools.
-6. **Python-Venv:** `ogstools`, `ogs6py`, `VTUinterface` (`import vtuIO`),
-   PyVista, VTK, NumPy, SciPy, Matplotlib, Pandas, meshio, Gmsh,
-   h5py, JupyterLab, Plotly und weitere Analysepakete.
-7. **Desktop:** ParaView (Ubuntu-APT-Paket) und Visual Studio Code
-   (offiziell signiertes Microsoft-APT-Repository).
-8. **Automatische Prüfungen:** Imports, VTU-Roundtrip, generiertes XML,
-   ein numerischer PARDISO-Test und echte kurze OGS-Referenzsimulationen.
+The full installation includes:
 
-**Wichtig:** Bei `--all` werden Systempakete und APT-Repositories installiert.
-Das Skript lässt bestehende OGS-Verzeichnisse unangetastet und installiert
-die selbst gebauten Programme ausschließlich unter
-`~/ogs-workshop/`. Es setzt keine Root-Rechte für den OGS-Build ein.
-Wenn eine APT-Quelle auf dem Rechner kaputt ist, bricht es sicher ab;
-APT-Signaturprüfungen dürfen nicht deaktiviert werden.
+1. **Ubuntu prerequisites:** GCC/GFortran, CMake 3.31.10, Ninja, Git, Python build dependencies, HDF5, Boost, Eigen and graphics libraries.
+2. **Gmsh:** the system CLI/GUI, development headers and Python API. A 2D mesh-generation and meshio-readback test is included.
+3. **Intel oneAPI:** oneMKL, PARDISO and Intel OpenMP, installed from Intel's signed APT repository. A numerical 2×2 PARDISO solver check is included.
+4. **TFEL/MFront:** source build from the `rliv-5.1` branch, including the interface used by OGS.
+5. **OpenGeoSys:** pinned revision `8ffec079b9ce8764ab565c6470839b34033bc718` from [upstream OGS](https://gitlab.opengeosys.org/ogs/ogs); all processes, CLI utilities, MFront, MKL and XDMF enabled.
+6. **Python environment:** Python 3.12 in a dedicated virtual environment, with OGSTools, ogs6py, VTUinterface, PyVista, VTK, NumPy, SciPy, Pandas, Matplotlib, meshio, Gmsh, h5py, Plotly and JupyterLab.
+7. **Desktop tools:** ParaView from Ubuntu APT and Visual Studio Code from Microsoft's signed repository.
+8. **Verification:** binary/package checks, generated Gmsh mesh, VTU roundtrip, OGS project XML creation, PARDISO solve and actual short OGS reference simulations.
 
-## 2. Nutzung im Unterricht
+**System changes:** `--all` installs or updates system packages and APT sources. OGS and TFEL builds are placed in a separate user-owned directory; existing OGS source/build folders are not deleted. Do not disable APT signature checks.
 
-Nach erfolgreicher Installation:
+## 2. Using the environment
+
+After a successful installation:
 
 ```bash
-source ~/ogs-workshop/activate.sh
+source ~/ogs-workshop-test/environment/activate.sh
 which ogs
 ogs --help
-which mfront
+gmsh --version
 mfront --version
 python -c "import ogstools, ogs6py, vtuIO, pyvista, matplotlib; print('Python OK')"
-jupyter lab ~/ogs-workshop/notebooks/01_ogs_diffusion_auswertung.ipynb
+jupyter lab ~/ogs-workshop-test/environment/notebooks/01_ogs_diffusion_auswertung.ipynb
 ```
 
-Das Aktivierungsskript setzt insbesondere **`OGS_BIN_PATH`** auf das
-selbst gebaute OGS mit MKL und **`LD_LIBRARY_PATH`** auf die Intel-
-und TFEL-Bibliotheken. Damit wird nicht versehentlich der OGS-Python-Wheel
-anstelle des gewünschten MKL-Builds benutzt.
+Activation sets `OGS_BIN_PATH` to the locally compiled OGS binary and `LD_LIBRARY_PATH` for Intel and TFEL runtime libraries.
 
-Weitere Kommandos:
+Additional commands, from the cloned `ogs-workshop` repository directory:
 
 ```bash
-bash install.sh --verify   # nur prüfen, kein Neubau
-bash install.sh --smoke    # echte OGS-Rechnungen + Python-Auswertung prüfen
+bash install.sh --verify   # Check tools and Python integration, without rebuilding
+bash install.sh --smoke    # Run representative OGS calculations and Python checks
 ```
 
-Das beigefügte Jupyter-Notebook `notebooks/01_ogs_diffusion_auswertung.ipynb` führt durch einen echten OGS-Diffusionsfall, vergleicht PyVista mit VTUinterface, erstellt einen Matplotlib-Plot und ermöglicht den numerischen Vergleich mit einem OGS-PardisoLU-Lauf.
+When invoking `install.sh` directly after using `bash install`, preserve the same environment directory:
 
-Die Ergebnisse werden unter `~/ogs-workshop/results/` abgelegt:
+```bash
+export OGS_WORKSHOP_HOME="$HOME/ogs-workshop-test/environment"
+bash install.sh --smoke
+```
 
-- `verification.json`: maschinenlesbare PASS/FAIL-Liste
-- `cases/<prozess>/ogs.log`: vollständiges OGS-Protokoll je Referenzfall
-- `cases/<prozess>/`: Resultate der einzelnen OGS-Rechnungen
-- `gmsh_unit_square.msh`: generiertes 2D-Testnetz aus Gmsh\n- `python_roundtrip.vtu` und `python_roundtrip.png`: Python-Demotest
-- `ogs6py_generated_project.prj`: XML-Generator-Demodatei (nicht als
-  vollständiges ausführbares OGS-Modell gedacht)
+Reports and test results are written under `~/ogs-workshop-test/environment/results/`:
 
-## 3. Schulungstests
+- `verification.json`: machine-readable PASS/FAIL report
+- `cases/<case>/ogs.log`: captured solver logs
+- `cases/<case>/`: generated OGS results
+- `gmsh_unit_square.msh`: generated Gmsh mesh
+- `python_roundtrip.vtu` and `python_roundtrip.png`: Python IO/plot demo
+- `ogs6py_generated_project.prj`: XML generation demonstration (not a complete simulation project)
 
-| Prozess-/Werkzeugklasse | Test | Nachweiskriterium |
+## 3. Verification coverage
+
+| Process or tool | Test | Success criterion |
 |---|---|---|
-| Gmsh CLI + Python-API | 2D-Einheitsquadrat erzeugen und als MSH mit meshio einlesen | Nichtleeres Netz, gültige Knoten/Elemente |\n| Intel MKL/PARDISO | 2×2 lineares System | Lösung `(2,2)`, Fehlercode 0 |
-| OGS-Steady-State-Diffusion | `Elliptic/square_1x1_SteadyStateDiffusion` | OGS exit 0 |
-| Small Deformation | `Mechanics/EvaluatingBbarWithSimpleExamples` | OGS exit 0 |
-| Richards Flow | `HydroMechanics/StaggeredScheme/FlowFullySaturated` | OGS exit 0 |
-| Hydro-Mechanics | `HydroMechanics/Linear/Confined_Compression` | OGS exit 0 |
-| Thermo-Richards-Mechanics | `ThermoRichardsMechanics/LinearMechanics` | OGS exit 0 |
-| Thermo-Richards-Flow | `ThermoRichardsFlow/RichardsFlow2D/RichardsFlow_2d_small.prj` | OGS exit 0, nichtleere Ergebnisdateien |
-| TH2M | `TH2M/TotalInitialStress` | OGS exit 0 |
-| Python/ogs6py | XML-Projektgenerierung | Datei erzeugt, XML gültig |
-| PyVista + VTK + meshio + VTUinterface + Matplotlib | VTU speichern/lesen, PNG plotten | Feld und Dateien korrekt |
-| OGSTools | Module und Projekt-API | Python-Import und OGS-Pfad |
+| Gmsh CLI/Python | Mesh a 2D square, read MSH using meshio | Nonempty nodes and elements |
+| Intel PARDISO | Solve a 2×2 linear system | Solution `(2,2)`, error code 0 |
+| Steady-state diffusion | Upstream OGS reference case | Exit 0, nonempty outputs |
+| PardisoLU diffusion | Same case with solver override | Exit 0, nonempty outputs |
+| Small deformation | Upstream mechanical reference case | Exit 0, nonempty outputs |
+| Richards flow | Upstream flow reference case | Exit 0, nonempty outputs |
+| Hydro-mechanics | Upstream coupled reference case | Exit 0, nonempty outputs |
+| Thermo-Richards flow | Upstream 2D reference case | Exit 0, nonempty outputs |
+| Thermo-Richards mechanics | Upstream TRM reference case | Exit 0, nonempty outputs |
+| TH2M | Upstream TH2M reference case | Exit 0, nonempty outputs |
+| ogs6py | Generate a valid XML project file | XML parses successfully |
+| PyVista / meshio / VTUinterface / Matplotlib | VTU roundtrip and image | Valid data and nonempty files |
+| OGSTools | Import and check OGS integration | Correct binary path |
 
-**Abgrenzung:** Die Tabelle bildet **repräsentative Prozessfamilien** ab,
-nicht jede Klasse/Prozessvariante und nicht die gesamte Regressionstest-Suite
-des OGS-Quellcodes. Insbesondere sind keine vollständigen validierten
-MFront-Materialbenchmark- oder TH2M-Langzeittests enthalten. Für eine
-spezifische Prozessklasse kann man weitere Referenz-PRJs aus
-`~/ogs-workshop/src/ogs/Tests/Data` ergänzen. Der Build aktiviert
-trotzdem **alle** OGS-Prozesse.
+These are **representative process-family checks**, not exhaustive validation of all OGS C++ classes, MFront material laws, or long-duration coupled simulations.
 
-Einzeltests durchführen:
+For a focused verification run:
 
 ```bash
-source ~/ogs-workshop/activate.sh
+export OGS_WORKSHOP_HOME="$HOME/ogs-workshop-test/environment"
+source "$OGS_WORKSHOP_HOME/activate.sh"
 python verify.py --models --only steady_diffusion --only small_deformation \
   --ogs "$OGS_BIN_PATH/ogs" \
-  --source ~/ogs-workshop/src/ogs/Tests/Data \
-  --output ~/ogs-workshop/results \
-  --timeout 90
+  --source "$OGS_WORKSHOP_HOME/src/ogs/Tests/Data" \
+  --output "$OGS_WORKSHOP_HOME/results"
 ```
 
-## 4. Fehlerdiagnose
+## 4. Troubleshooting
 
-- **`sudo apt-get update` schlägt fehl:** Unterschriebene Paketquellen
-  reparieren; nicht mit `--allow-unauthenticated` umgehen.
-- **MKL vorhanden, aber `omp_in_parallel` fehlt:** Intel-OpenMP-Laufzeit
-  `libiomp5.so` wird benötigt. Die Toolkit-Installation und `activate.sh`
-  stellen sie bereit.
-- **MFront wird beim CMake-Konfigurieren nicht gefunden:** `--tfel`
-  ausführen, dann `--ogs` starten. Prüfen: `mfront --version`.
-- **VTK-Compile dauert lange:** Nur bei aktiver CPU-Auslastung und
-  neu erzeugten Objekten weiterlaufen lassen; ein externes VTK-Projekt
-  kann im oberen Build-Log lange ohne neue Zeilen kompilieren.
-- **OGSTools verwendet falsches OGS:** `echo "$OGS_BIN_PATH"` prüfen.
-- **ParaView/VS Code lassen sich nicht öffnen:** Für GUI wird eine
-  Desktop-Sitzung benötigt; auf reinen SSH-Servern ohne Display ist die
-  Installation trotzdem prüfbar, aber keine GUI-Lauftestbestätigung.
-- **Keine Python-Pakete im System-Python:** Bitte *nicht* `sudo pip`
-  auf Ubuntu 24.04 verwenden. Stattdessen `source .../activate.sh`.
+- **APT fails:** Repair the signed package repository; never use `--allow-unauthenticated`.
+- **Intel OpenMP missing:** Check that `libiomp5.so` is installed and available via `activate.sh`.
+- **MFront not found by CMake:** Run `bash install.sh --tfel`, then `bash install.sh --ogs` using the correct `OGS_WORKSHOP_HOME`.
+- **VTK compilation appears slow:** Inspect CPU activity and the build log before assuming the build has stalled.
+- **Wrong OGS executable:** Inspect `echo "$OGS_BIN_PATH"`.
+- **ParaView or VS Code cannot open:** GUI applications require a desktop session; headless installation checks do not validate GUI launches.
+- **Python packages unavailable in the system interpreter:** Activate the workshop venv rather than using `sudo pip`.
 
-## 5. Nachvollziehbarkeit und offizielle Quellen
+## 5. Official references
 
-- OpenGeoSys: https://www.opengeosys.org/stable/docs/devguide/getting-started/prerequisites/
-- OGS-Quellcode: https://gitlab.opengeosys.org/ogs/ogs
-- TFEL/MFront: https://thelfer.github.io/tfel/web/install.html
-- Intel oneMKL: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl-download.html
-- OGSTools: https://ogstools.opengeosys.org/stable/user-guide/
-- ogs6py: https://github.com/joergbuchwald/ogs6py
-- VTUinterface: https://github.com/joergbuchwald/VTUinterface
-- Gmsh: https://gmsh.info/\n- ParaView: https://www.paraview.org/Download/
-- VS Code: https://code.visualstudio.com/docs/setup/linux
+- [OpenGeoSys](https://www.opengeosys.org/stable/docs/devguide/getting-started/prerequisites/)
+- [OGS source](https://gitlab.opengeosys.org/ogs/ogs)
+- [TFEL/MFront](https://thelfer.github.io/tfel/web/install.html)
+- [Intel oneMKL](https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl-download.html)
+- [OGSTools](https://ogstools.opengeosys.org/stable/user-guide/)
+- [ogs6py](https://github.com/joergbuchwald/ogs6py)
+- [VTUinterface](https://github.com/joergbuchwald/VTUinterface)
+- [Gmsh](https://gmsh.info/)
+- [ParaView](https://www.paraview.org/Download/)
+- [VS Code](https://code.visualstudio.com/docs/setup/linux)
 
-Der Installer speichert Quellcode-Commitstände und Installationsprotokolle
-lokal. Die exakten `pip`-Versionen lassen sich mit
-`~/ogs-workshop/.venv/bin/python -m pip freeze > pip-freeze.txt`
-für die Schulung archivieren.
+## Release status
 
-**Die freigegebene Schulungsumgebung gilt erst als geprüft, wenn sowohl
-Installations- als auch OGS-/Python-Testbericht erfolgreich sind.**
-
-
-## Freigabestatus
-
-Die Ubuntu-26.04-Unterstützung ist vorbereitet, aber ein vollständiger Neuaufbau einschließlich GUI-Anwendungen auf 26.04 ist noch nicht end-to-end bestätigt. Die Installation kann systemweite APT-Pakete und Paketquellen ändern. Der öffentliche Quellcode ist ein Schulungsprojekt, keine offizielle OGS-Distribution.
+Ubuntu 24.04 and 26.04 support is configured, but the full fresh-installation path (including GUI applications) has **not yet been verified end-to-end on Ubuntu 26.04**. The full installation requires system-level APT changes and must be run with suitable privileges. This is a community training project, not an official OGS distribution.
