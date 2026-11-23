@@ -41,7 +41,7 @@ ogs --help
 gmsh --version
 mfront --version
 python -c "import ogstools, ogs6py, vtuIO, pyvista, matplotlib; print('Python OK')"
-jupyter lab ~/ogs-workshop-test/environment/notebooks/01_ogs_diffusion_auswertung.ipynb
+jupyter lab ~/ogs-workshop-test/environment/notebooks/01_ogs_diffusion_analysis.ipynb
 ```
 
 Activation sets `OGS_BIN_PATH` to the locally compiled OGS binary and `LD_LIBRARY_PATH` for Intel and TFEL runtime libraries.
