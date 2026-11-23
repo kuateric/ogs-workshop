@@ -4,7 +4,7 @@
 Stationary linear diffusion with unchanged right Dirichlet value 30 implies
 u_50 = 30 + (50-30)/(60-30) * (u_60 - 30) at every node.
 This is an exact consequence of linearity, up to solver tolerances.
-Run after bash scripts/run.sh.
+Run after completing the reference OGS simulation (Step 6).
 """
 from pathlib import Path
 import subprocess

@@ -1,59 +1,26 @@
-# Teilnehmerübung – OGS-Baugrube (60 Minuten)
+# OGS Excavation — participant exercises (English)
 
-**Modell:** 2D-Diffusion auf einer 65 × 30 m-Domäne. Eine 0,2 m breite ausgesparte Verbauwand reicht von y=30 m bis y=8 m. Links wird das Potential 60, rechts 30 gesetzt. `pressure` ist hier ein mathematisches Potential, kein Wasserdruck in Pa.
+## 60-minute agenda
 
-| Minute | Gemeinsam durchführen | Checkpoint |
-|---|---|---|
-| 0–5 | Problem skizzieren, Randwerte und Nullflusswand identifizieren | Richtung des Flusses begründen |
-| 5–15 | `geometry/excavation.geo` in Gmsh öffnen; `lc` erläutern, Netz erstellen | Mesh sichtbar |
-| 15–25 | `GMSH2OGS`, Bulk- und Randnetze erklären; Conversion-Skripte ausführen | `mesh/excavation.vtu`, `_101.vtu`, `_102.vtu` |
-| 25–40 | In `models/excavation.prj` Material, Prozess, `p_bc0`/`p_bc1`, Solver und Ausgabe finden | Teilnehmer erklärt fünf XML-Blöcke |
-| 40–45 | `bash scripts/run.sh`; berechnete Felder kontrollieren | OGS-Solver erfolgreich |
-| 45–55 | `python scripts/run_variation.py` und Ergebnis in ParaView vergleichen | Werte 60/30 gegen 50/30 |
-| 55–60 | Diskussion: Potentialgefälle, Fluss, Modellgrenzen | Eine technische Schlussfolgerung |
+| Time | Run in VS Code Jupyter | Explain / observed output |
+| --- | --- | --- |
+| 0–5 min | `01_pre_processing/01_geometry.ipynb` | Geometry 65 × 30 m; thin, impermeable wall void |
+| 5–12 min | `01_pre_processing/02_meshing.ipynb` | Triangular mesh with refinement at wall toe |
+| 12–18 min | `01_pre_processing/03_subdomains.ipynb` | One material region, MaterialID = 0 |
+| 18–25 min | `01_pre_processing/04_surfaces.ipynb` | Dirichlet 1D boundary submeshes 101, 102 |
+| 25–31 min | `02_processing/05_model_setup.ipynb` | `.prj` XML model inputs, actual mesh with BC values |
+| 31–38 min | `02_processing/06_run_reference.ipynb` | OGS reference solution (60/30) |
+| 38–45 min | `02_processing/07_run_exercise.ipynb` | OGS exercise solution (50/30) |
+| 45–54 min | `03_post_processing/08_flow_network.ipynb` | Equipotentials and model flux streamlines |
+| 54–60 min | `03_post_processing/09_verification.ipynb` | Discrete FEM conservation and 2/3 scaling |
 
-## Arbeitsbefehle
+**Normal engineering work without notebooks:** use `04_vscode_workflow/README.md` and execute `python run_step.py 1` through `9`, or `bash run_all.sh`. This folder has its own complete sources and keeps its output separate from teaching notebooks.
 
-Im Ordner `training/ogs-excavation-60min`:
+## Questions
 
-```bash
-bash scripts/run.sh
-python scripts/check_results.py
-python scripts/plot_potential.py
-python scripts/run_variation.py
-python scripts/check_flux_balance.py
-```
+1. Why does the bulk mesh have **only MaterialID = 0**? Because this is a single-material example: subdomain tagging does not automatically create multiple materials.
+2. What is the difference between `excavation.vtu` and `excavation_101.vtu`? The first is the complete bulk mesh; the second is the left Dirichlet boundary submesh with `bulk_node_ids`.
+3. What changes when the left boundary potential is reduced from 60 to 50? The potential and flux amplitudes scale with the imposed difference: `20/30 = 2/3`.
+4. Are flux values m³/s? **No**: this numerical diffusion benchmark has not been parameterised as real groundwater flow.
 
-### Teilnehmeraufgabe
-1. Öffne `models/excavation.prj` und finde den Parameter `p_bc0=60`.
-2. Erkläre, warum die Verringerung auf 50 die Potentialdifferenz von 30 auf 20 reduziert.
-3. Vergleiche in `results/comparison_bc60_bc50.png` beide Rechnungen mit derselben Farbskala.
-4. Zeige in ParaView die jeweilige VTU-Datei für Zeitschritt 1, färbe nach `pressure` und aktiviere Konturlinien. Erkläre, warum die Wandspitze das Feld umlenkt.
-
-**Automatisierte Variante:** `run_variation.py` schreibt eine temporäre Kopie der Projektdatei mit `p_bc0=50` und lässt die Vorlage unverändert.
-
-## Mathematischer Bonus-Check
-
-Für dieses *lineare* stationäre Problem mit gleicher Geometrie, gleichem Diffusionskoeffizienten und rechter Randbedingung 30 gilt theoretisch
-
-```text
-u50(x,y) = 30 + (2/3) * (u60(x,y) - 30).
-```
-
-Der Test vergleicht die beiden OGS-Felder an sämtlichen Knoten (Toleranz 1e-5).
-
-## Ausweichplan
-
-Wenn auf einem Teilnehmerrechner Netzkonvertierung oder OGS nicht verfügbar sind, zeigt der Dozent die mit dem ThinkStation-CI-Lauf vorab erzeugten VTU-Dateien. Die alte `drainage_excavation.prj` des OGS-Benchmarks ist **nicht** geometrisch identisch mit unserem Schulungsbeispiel.
-
-## Was diese Fallstudie nicht beweist
-
-Keine physikalische Entwässerungsmenge, keine Darcy-Wasserbilanz und keine validierte transient gekoppelte Grundwasserströmung. Die verwendete ThinkStation-OGS-Version ist `g8ffec079`; eine Ausführung mit dem Originalbinary 6.5.9 wurde noch nicht gezeigt.
-
-## Abschluss – 5-Minuten-Flussbilanz
-
-Die Auswertung `results/discrete_flux_balance.csv` enthält die diskreten FEM-Randreaktionen. Für die Referenz sind es links `+10.0450391386` und rechts `-10.0450391386`; bei der Variation links `+6.69669275904` und rechts `-6.69669275904`. Zahlen aus dem nativen [ThinkStation-Test #45153779850](https://github.com/kuateric/engineering-os/actions/runs/45153779850).
-
-Fragen: Warum summieren sich Zu- und Abfluss zu annähernd null? Warum beträgt das Flussverhältnis 2/3? Weshalb dürfen die Zahlen ohne Kalibrierung nicht als m³/s interpretiert werden?
-
-**Wichtig:** Dies ist eine Bilanz über die Dirichlet-Reaktionen aus der assemblierten linearen FEM-Steifigkeit (unter der Annahme `diffusion=1`). Es ist kein punktweiser Beweis verschwindender Flüsse an jeder undurchlässigen Wandkante.
+Use the green PASS messages as specific numerical checks, not a general claim of validation.
