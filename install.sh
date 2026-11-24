@@ -240,14 +240,39 @@ install_ogs() {
     return 0
   fi
   mkdir -p "$ROOT/src" "$ROOT/build" "$ROOT/install"
+  # Download just the pinned commit. Avoid partial-clone filters because
+  # interrupted lazy blob downloads can fail during checkout.
   if [[ ! -d "$SRC/.git" ]]; then
     [[ ! -e "$SRC" ]] || { echo "Source exists but is not git: $SRC" >&2; return 1; }
-    git clone --filter=blob:limit=100k --no-checkout https://gitlab.opengeosys.org/ogs/ogs.git "$SRC"
+    mkdir -p "$SRC"
+    git -C "$SRC" init
+    git -C "$SRC" remote add origin https://gitlab.opengeosys.org/ogs/ogs.git
   fi
   [[ "$(git -C "$SRC" remote get-url origin)" == https://gitlab.opengeosys.org/ogs/ogs.git ]] ||
     { echo "Unexpected OGS upstream remote" >&2; return 1; }
-  git -C "$SRC" fetch --depth 1 origin "$OGS_COMMIT"
-  git -C "$SRC" checkout --detach --force "$OGS_COMMIT"
+  # Repair settings from an earlier interrupted partial clone without
+  # deleting the source folder or unrelated installation directories.
+  git -C "$SRC" config --unset-all remote.origin.partialclonefilter || true
+  git -C "$SRC" config --unset-all remote.origin.promisor || true
+  local attempt max_attempts=5 delay_seconds
+  for ((attempt=1; attempt<=max_attempts; attempt++)); do
+    echo "[OGS download] Fetching pinned commit, attempt $attempt/$max_attempts"
+    if git -c http.version=HTTP/1.1 \
+           -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=120 \
+           -C "$SRC" fetch --no-filter --depth 1 origin "$OGS_COMMIT" &&
+       git -C "$SRC" -c advice.detachedHead=false checkout --detach --force "$OGS_COMMIT" &&
+       git -C "$SRC" fsck --connectivity-only --no-reflogs >/dev/null; then
+      echo "[PASS] OGS source downloaded and checked out: $OGS_COMMIT"
+      break
+    fi
+    if ((attempt == max_attempts)); then
+      echo "[FAIL] OGS download failed after $max_attempts attempts. Check network access and rerun 'bash install'." >&2
+      return 1
+    fi
+    delay_seconds=$((attempt * 10))
+    echo "[WARN] Interrupted OGS download. Retrying in ${delay_seconds}s; preserving the working directory."
+    sleep "$delay_seconds"
+  done
   git -C "$SRC" rev-parse HEAD | tee "$ROOT/logs/ogs-git-sha.txt"
   [[ -d "$SRC/ProcessLib/TH2M" && -d "$SRC/ProcessLib/ThermoRichardsMechanics" ]]
   "$CM" -S "$SRC" -B "$BUILD" -G Ninja \
