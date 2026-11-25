@@ -14,7 +14,7 @@ if ! command -v "$UV" >/dev/null 2>&1; then
 fi
 "$UV" python install 3.12
 "$UV" venv --python 3.12 --managed-python .venv-workshop
-"$UV" pip install --python .venv-workshop/bin/python -r requirements.txt gmsh
+"$UV" pip install --python .venv-workshop/bin/python -r requirements.txt
 .venv-workshop/bin/python -m ipykernel install --user --name ogs-workshop --display-name "OGS Workshop (Python 3.12)"
 .venv-workshop/bin/python scripts/preflight.py
 echo
