@@ -1,10 +1,14 @@
+# NUMO / OGS excavation training: all ten notebooks and the standalone VS Code workflow
+# Tested target interpreter: Python 3.12; keep NumPy 1.x for compatible compiled packages.
 numpy>=1.26,<2
-matplotlib>=3.8
+matplotlib>=3.8,<3.11
 meshio>=5.3
 scipy>=1.12
+gmsh>=4.12
+vtk>=9.2
+pyvista
 VTUinterface
 ogs6py
-pyvista
-vtk
 ipykernel
-# No OGSTools required
+# Built into Python: pathlib, sys, subprocess, re, csv, xml.etree.ElementTree
+# No OGSTools, pandas, seaborn or standalone JupyterLab required for VS Code.
