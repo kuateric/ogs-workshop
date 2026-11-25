@@ -32,7 +32,6 @@ jobs:
           pdflatex -interaction=nonstopmode -halt-on-error OGS_Excavation_Introduction.tex
           pdflatex -interaction=nonstopmode -halt-on-error OGS_Excavation_Introduction.tex
           test -s OGS_Excavation_Introduction.pdf
-          pdfinfo OGS_Excavation_Introduction.pdf | grep Pages
       - name: Commit only the finished PDF
         run: |
           git config user.name "github-actions[bot]"
