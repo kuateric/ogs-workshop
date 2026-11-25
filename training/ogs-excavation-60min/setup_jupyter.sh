@@ -1,56 +1,58 @@
 #!/usr/bin/env bash
-# Install a dedicated Python 3.12 VS Code/Jupyter kernel for the workshop.
-# Works without sudo, Python ensurepip, or curl (Python 3 urllib bootstrap).
+# OGS workshop VS Code/Jupyter setup. Reuse a working Python environment first.
+# No sudo, curl, internet or uv required when an existing interpreter has packages.
 set -euo pipefail
 cd "$(dirname "$0")"
-ROOT="$PWD"
 
-if [[ -n "${UV:-}" && -x "${UV}" ]]; then
-  UV_BIN="$UV"
-elif command -v uv >/dev/null 2>&1; then
-  UV_BIN="$(command -v uv)"
-elif [[ -x "$HOME/.local/bin/uv" ]]; then
-  UV_BIN="$HOME/.local/bin/uv"
-else
-  echo "[setup] uv not found. Installing official uv launcher into user home (no sudo)."
-  if ! command -v python3 >/dev/null 2>&1; then
-    echo "ERROR: python3 is required to bootstrap uv without curl." >&2
+# Override by specifying WORKSHOP_PYTHON=/absolute/path/to/python bash setup_jupyter.sh
+CANDIDATES=()
+if [[ -n "${WORKSHOP_PYTHON:-}" ]]; then CANDIDATES+=("$WORKSHOP_PYTHON"); fi
+CANDIDATES+=(
+  "/home/simoe/pip_apps/.venv-ogs/bin/python"
+  "$HOME/pip_apps/.venv-ogs/bin/python"
+  "$PWD/.venv-workshop/bin/python"
+  "$PWD/.venv312/bin/python"
+)
+
+PY=""
+for candidate in "${CANDIDATES[@]}"; do
+  if [[ -x "$candidate" ]] && "$candidate" -c 'import numpy,matplotlib,meshio,scipy,vtk,pyvista,vtuIO,gmsh,ipykernel; from ogs6py import ogs' >/dev/null 2>&1; then
+    PY="$candidate"
+    echo "[setup] Reusing verified environment: $PY"
+    break
+  fi
+done
+
+if [[ -z "$PY" ]]; then
+  echo "[setup] No complete existing environment detected; trying uv if already installed."
+  if [[ -n "${UV:-}" && -x "$UV" ]]; then
+    UV_BIN="$UV"
+  elif command -v uv >/dev/null 2>&1; then
+    UV_BIN="$(command -v uv)"
+  elif [[ -x "$HOME/.local/bin/uv" ]]; then
+    UV_BIN="$HOME/.local/bin/uv"
+  else
+    echo >&2 "ERROR: no usable Python environment and uv is not installed."
+    echo >&2 "The TEC network returned HTTP 403 for the uv installer, so setup will not attempt downloads automatically."
+    echo >&2 "If you have a working environment, run:"
+    echo >&2 "  WORKSHOP_PYTHON=/absolute/path/to/venv/bin/python bash setup_jupyter.sh"
     exit 2
   fi
-  export UV_INSTALL_DIR="$HOME/.local/bin"
-  BOOTSTRAP="$(mktemp)"
-  trap 'rm -f "$BOOTSTRAP"' EXIT
-  python3 - "$BOOTSTRAP" <<'PY'
-import sys
-import urllib.request
-url = "https://astral.sh/uv/install.sh"
-try:
-    with urllib.request.urlopen(url, timeout=45) as response:
-        script = response.read()
-except Exception as exc:
-    raise SystemExit(f"ERROR: could not download official uv installer: {exc}")
-with open(sys.argv[1], "wb") as output:
-    output.write(script)
-print(f"[setup] Downloaded official uv installer ({len(script)} bytes)")
-PY
-  sh "$BOOTSTRAP"
-  UV_BIN="$HOME/.local/bin/uv"
-  if [[ ! -x "$UV_BIN" ]]; then
-    echo "ERROR: uv installer completed but $UV_BIN is not executable." >&2
-    exit 2
-  fi
+  "$UV_BIN" python install 3.12
+  "$UV_BIN" venv --python 3.12 --managed-python .venv-workshop
+  "$UV_BIN" pip install --python .venv-workshop/bin/python -r requirements.txt
+  PY="$PWD/.venv-workshop/bin/python"
 fi
 
-echo "[setup] uv: $("$UV_BIN" --version)"
-echo "[setup] Setting up isolated Python 3.12 in $ROOT/.venv-workshop"
-"$UV_BIN" python install 3.12
-"$UV_BIN" venv --python 3.12 --managed-python .venv-workshop
-"$UV_BIN" pip install --python .venv-workshop/bin/python -r requirements.txt
-.venv-workshop/bin/python -m ipykernel install --user --name ogs-workshop --display-name "OGS Workshop (Python 3.12)"
-
-echo "[setup] Checking imports and external OGS tools"
-.venv-workshop/bin/python scripts/preflight.py
-
-echo
-echo "NEXT: Open 00_environment_check.ipynb in VS Code."
-echo "Select 'OGS Workshop (Python 3.12)' and run all cells."
+echo "[setup] Python executable: $("$PY" -c 'import sys;print(sys.executable)')"
+"$PY" -m ipykernel install --user --name ogs-workshop --display-name "OGS Workshop (Python 3.12)"
+echo "[setup] Registered VS Code notebook kernel 'OGS Workshop (Python 3.12)'"
+echo "[setup] Preflight check — external OGS binaries and existing mesh files are also checked."
+if "$PY" scripts/preflight.py; then
+  echo "[setup] PASS: Workshop environment and model inputs ready."
+else
+  echo >&2 "[setup] WARNING: At least one preflight check failed."
+  echo >&2 "The kernel was registered. Resolve the reported missing tools/files before the full live run."
+  exit 1
+fi
+echo "[setup] Open 00_environment_check.ipynb in VS Code and select 'OGS Workshop (Python 3.12)'."
