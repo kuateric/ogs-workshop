@@ -6,10 +6,13 @@ Output: excavation_101.vtu (upper left), excavation_102.vtu (upper right).
 Existing output meshes must not be considered new candidate inputs.
 """
 from pathlib import Path
+import sys
 import numpy as np
 import meshio
 
-root = Path(__file__).resolve().parents[1] / "mesh"
+if len(sys.argv) > 2:
+    raise SystemExit("Usage: python scripts/assign_boundary_meshes.py [MESH_OUTPUT_DIR]")
+root = Path(sys.argv[1]).resolve() if len(sys.argv) == 2 else Path(__file__).resolve().parents[1] / "mesh"
 # Ignore the script's OWN previously generated outputs: makes this step repeatable.
 # Keep numbered GMSH2OGS submeshes as input; do not alter bulk excavation.vtu.
 candidates = sorted(
