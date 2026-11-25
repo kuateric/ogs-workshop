@@ -5,9 +5,13 @@ Only permutes local triangle vertices. Does not reorder bulk nodes, so
 bulk_node_ids in generated boundary files remain valid.
 """
 from pathlib import Path
+import sys
 import numpy as np
 import meshio
-path=Path(__file__).resolve().parents[1]/"mesh"/"excavation.vtu"
+mesh_dir = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parents[1] / "mesh"
+if len(sys.argv) > 2:
+    raise SystemExit("Usage: python scripts/orient_bulk_mesh.py [MESH_OUTPUT_DIR]")
+path=mesh_dir/"excavation.vtu"
 m=meshio.read(path)
 count=0
 found=0
