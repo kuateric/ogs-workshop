@@ -50,15 +50,20 @@ if [[ -z "$PY" ]]; then
   echo
   echo "ERROR: No fully working Python environment was found." >&2
   echo "The exact missing imports are printed above." >&2
+  echo "If meshio reports np.string_ removed in NumPy 2, the old meshio requires NumPy 1.x." >&2
+  echo "Repair the user-local Python 3.10 environment with:" >&2
+  echo '  python3 -m pip install --user "numpy==1.26.4"' >&2
+  echo "Then rerun this script. This changes only your user-installed NumPy, not system Python." >&2
   echo "To use an existing environment explicitly:" >&2
   echo "  WORKSHOP_PYTHON=/absolute/path/to/python bash setup_jupyter.sh" >&2
-  echo "If uv exists on a different machine, create the environment there or use its working Python interpreter." >&2
+  echo "For a fully isolated environment, use virtualenv/venv where available." >&2
   echo "This script intentionally does not download uv from the blocked host." >&2
   exit 2
 fi
 
 echo "[setup] Registering workshop Jupyter kernel using $PY"
-"$PY" -m ipykernel install --user --name ogs-workshop --display-name "OGS Workshop (Python 3.12)"
+VERSION="$("$PY" -c 'import sys;print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+"$PY" -m ipykernel install --user --name ogs-workshop --display-name "OGS Workshop (Python $VERSION)"
 echo "[setup] Running preflight..."
 "$PY" scripts/preflight.py
 echo "[setup] Open 00_environment_check.ipynb and select the OGS Workshop kernel."
