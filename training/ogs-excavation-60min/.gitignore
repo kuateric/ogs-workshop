@@ -4,3 +4,6 @@
 __pycache__/
 *.pyc
 terminal_mesh_output/
+
+quick_demo_results/
+models/quick_demo.prj
